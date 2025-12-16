@@ -1,4 +1,4 @@
--- Active: 1764672841665@@127.0.0.1@3306@smart_wallet
+-- Active: 1764672841665@@127.0.0.1@3306@smart_wallet_2
 CREATE DATABASE smart_wallet;
 
 use smart_wallet;
@@ -45,7 +45,6 @@ INSERT INTO users(name , email , password) VALUES('gumball', 'imad@gmail.com','1
 show tables
 
 
-select * from income;
+CREATE DATABASE smart_wallet_2
 
-
-delete from income where id = 1 and user_id = 1;
+use smart_wallet_2
