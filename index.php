@@ -26,14 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 require 'send_email.php';
 
-                $email_status = sendOTP($email , $otp);
+                $email_status = sendOTP($email, $otp);
 
-                if($email_status === true){
+                if ($email_status === true) {
                     $_SESSION['temp_id'] = $user_id;
                     header('Location: verify_otp.php');
                     exit();
-                }else{
-                    echo "there was an error". $email_status;
+                } else {
+                    echo "there was an error" . $email_status;
                 }
                 //////////////////////////////////////////
             } else {
@@ -61,9 +61,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             $_SESSION['user-id'] = $new_id;
 
-            header('Location: dashboard.php');
+            //////////////////////////////////////////
+            $otp = rand(100000, 999999);
 
-            echo 'you are now registered';
+            $user_id = $_SESSION['user-id'];
+
+            $update_otp = "UPDATE users SET otp_code = {$otp} WHERE id = {$user_id}";
+
+            mysqli_query($connect, $update_otp);
+
+            require 'send_email.php';
+
+            $email_status = sendOTP($email, $otp);
+
+            if ($email_status === true) {
+                $_SESSION['temp_id'] = $user_id;
+                header('Location: verify_otp.php');
+                exit();
+            } else {
+                echo "there was an error" . $email_status;
+            }
+            //////////////////////////////////////////
+
+            // header('Location: dashboard.php');
+
+            // echo 'you are now registered';
         }
     }
 }
