@@ -48,3 +48,6 @@ show tables
 CREATE DATABASE smart_wallet_2
 
 use smart_wallet_2
+
+ALTER TABLE users ADD otp_code VARCHAR(6);
+

@@ -83,6 +83,12 @@ if (!empty($_POST['expense-delete'])) {
     mysqli_query($connect, $sql);
 }
 
+// get the name of the user
+$sql = "SELECT name FROM users WHERE id = {$_SESSION['user-id']}";
+$result = mysqli_query($connect,$sql);
+$row = mysqli_fetch_assoc($result);
+$the_name = $row['name'];
+// echo $the_name;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -94,7 +100,7 @@ if (!empty($_POST['expense-delete'])) {
     <script src="https://kit.fontawesome.com/559afa4763.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <title>tracker</title>
+    <title>Smart Wallet 2</title>
 </head>
 <style type="text/tailwindcss">
     @theme {
@@ -114,7 +120,10 @@ if (!empty($_POST['expense-delete'])) {
 
 <body>
 
-    <header class="bg-gray-900 text-3xl font-bold pl-9 py-3 text-white">Smart Wallet</header>
+    <header class="bg-gray-900 text-3xl font-bold pl-9 py-3 text-white flex justify-between">
+        Welcome <?php echo $the_name ?>
+        <a href="logout.php" class="bg-red-500 text-white px-4 py-2 rounded">Logout</a>
+    </header>
     <section class="pt-3 bg-black pb-10 flex flex-col gap-8 px-12">
         <div class="flex flex-wrap gap-5 justify-between">
             <h1 class="text-4xl font-bold text-white">Dashboard<br><span class="text-sm font-sans text-gray-500">manage you spends in one page.</span></h1>

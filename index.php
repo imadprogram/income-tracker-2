@@ -1,7 +1,6 @@
 <?php
-include('connect.php')
-?>
-<?php
+include('connect.php');
+
 session_start();
 // Login form
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -14,7 +13,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $row = mysqli_fetch_assoc($result);
             if (password_verify($password, $row['password'])) {
                 $_SESSION['user-id'] = $row['id'];
-                header('Location: dashboard.php');
+                // header('Location: verify_otp.php');
+
+                //////////////////////////////////////////
+                $otp = rand(100000, 999999);
+
+                $user_id = $row['id'];
+
+                $update_otp = "UPDATE users SET otp_code = {$otp} WHERE id = {$user_id}";
+
+                mysqli_query($connect, $update_otp);
+
+                require 'send_email.php';
+
+                $email_status = sendOTP($email , $otp);
+
+                if($email_status === true){
+                    $_SESSION['temp_id'] = $user_id;
+                    header('Location: verify_otp.php');
+                    exit();
+                }else{
+                    echo "there was an error". $email_status;
+                }
+                //////////////////////////////////////////
             } else {
                 echo 'pass is wrong';
             }
