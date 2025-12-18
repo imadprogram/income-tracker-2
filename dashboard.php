@@ -2,7 +2,13 @@
 include("connect.php");
 ?>
 <?php
-    session_start();
+session_start();
+
+
+
+if (!isset($_SESSION['user-id'])) {
+    header('Location: index.php');
+}
 
 if (isset($_POST["income-submit"])) {
     try {
@@ -85,10 +91,14 @@ if (!empty($_POST['expense-delete'])) {
 
 // get the name of the user
 $sql = "SELECT name FROM users WHERE id = {$_SESSION['user-id']}";
-$result = mysqli_query($connect,$sql);
+$result = mysqli_query($connect, $sql);
 $row = mysqli_fetch_assoc($result);
 $the_name = $row['name'];
 // echo $the_name;
+
+// card infos
+$infos = mysqli_query($connect, "SELECT * FROM cards WHERE user_id = {$_SESSION['user-id']}");
+$row = mysqli_fetch_assoc($infos);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -118,235 +128,228 @@ $the_name = $row['name'];
       }
     </style>
 
-<body>
+<body class="bg-gray-50 text-slate-800 font-sans antialiased">
 
-    <header class="bg-gray-900 text-3xl font-bold pl-9 py-3 text-white flex justify-between">
-        Welcome <?php echo $the_name ?>
-        <a href="logout.php" class="bg-red-500 text-white px-4 py-2 rounded">Logout</a>
-    </header>
-    <section class="pt-3 bg-black pb-10 flex flex-col gap-8 px-12">
-        <div class="flex flex-wrap gap-5 justify-between">
-            <h1 class="text-4xl font-bold text-white">Dashboard<br><span class="text-sm font-sans text-gray-500">manage you spends in one page.</span></h1>
-            <div>
-                <button id="income-btn" class="cursor-pointer px-6 py-2 rounded-full text-white bg-[linear-gradient(to_top,#52c234,#061700)]">Add income</button>
-                <button id="expense-btn" class="cursor-pointer px-6 py-2 rounded-full border-2 text-white border-green-700">Add expense</button>
-            </div>
-        </div>
-        <!-- cards -->
-        <div class="flex flex-wrap gap-5 md:gap-30 md:px-24 pt-4">
-            <div
-                class="flex items-center p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800 grow">
-                <div
-                    class="p-3 mr-4 text-green-500 bg-green-100 rounded-full dark:text-green-100 dark:bg-green-500">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                            fill-rule="evenodd"
-                            d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
-                            clip-rule="evenodd"></path>
-                    </svg>
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center gap-2">
+                        <span class="font-bold text-xl tracking-tight text-indigo-900">Smart Wallet</span>
+                    </div>
                 </div>
-                <div>
-                    <p
-                        class="mb-2 text-md font-medium text-gray-600 dark:text-gray-400">
-                        income balance
-                    </p>
-                    <p
-                        class="text-2xl font-bold text-gray-700 dark:text-gray-200">
-                        $ <?php echo $income_total + 0 ?>
-                    </p>
-                </div>
-            </div>
-            <!-- card -->
-            <div
-                class="flex items-center p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800 grow">
-                <div
-                    class="p-3 mr-4 text-green-500 bg-green-100 rounded-full dark:text-green-100 dark:bg-green-500">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                            fill-rule="evenodd"
-                            d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
-                            clip-rule="evenodd"></path>
-                    </svg>
-                </div>
-                <div>
-                    <p
-                        class="mb-2 text-md font-medium text-gray-600 dark:text-gray-400">
-                        expense balance
-                    </p>
-                    <p
-                        class="text-2xl font-bold text-gray-700 dark:text-gray-200">
-                        $ <?php echo $expense_total + 0 ?>
-                    </p>
-                </div>
-            </div>
-            <!-- card -->
-            <div
-                class="flex items-center p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800 grow">
-                <div
-                    class="p-3 mr-4 text-green-500 bg-green-100 rounded-full dark:text-green-100 dark:bg-green-500">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                            fill-rule="evenodd"
-                            d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
-                            clip-rule="evenodd"></path>
-                    </svg>
-                </div>
-                <div>
-                    <p
-                        class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">
-                        sold balance
-                    </p>
-                    <p
-                        class="text-2xl font-bold text-gray-700 dark:text-gray-200">
-                        $ <?php echo $income_total - $expense_total + 0 ?>
-                    </p>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm font-medium text-gray-500">Welcome, <span class="text-gray-900 font-bold">Imad</span></span>
+                    <a href="logout.php" class="bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                        <span>Logout</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                        </svg>
+                    </a>
                 </div>
             </div>
         </div>
-        <!-- lists section -->
-        <div class="flex flex-wrap md:flex-nowrap gap-30">
-            <!-- incomes Table -->
-            <div id="incomes" class="w-full overflow-y-scroll [scrollbar-width:none] rounded-lg shadow-xs h-80 bg-gray-700 text-white relative">
-                <div class="w-full overflow-x-auto">
-                    <table class="w-full whitespace-no-wrap">
-                        <thead>
-                            <tr
-                                class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b dark:border-gray-700 bg-gray-50 dark:text-gray-400 dark:bg-gray-800">
-                                <th class="px-4 py-3">Amount</th>
-                                <th class="px-4 py-3">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody
-                            class=" divide-y divide-gray-700 bg-gray-800">
-                            <?php
-                            $incomes = "SELECT * FROM income WHERE MONTH(date) = MONTH(CURRENT_DATE) AND YEAR(date) = YEAR(CURRENT_DATE) AND user_id = {$_SESSION['user-id']}";
-                            $the_result = mysqli_query($connect, $incomes);
-                            if (mysqli_num_rows($the_result) > 0) {
-                                while ($row = mysqli_fetch_assoc($the_result)) {
-                                    echo "
-                                        <tr data-id=" . $row['id'] . " class='text-white element'>
-                                            <td class='px-4 py-3 text-sm'>
-                                                $ <span class='text-green-500 font-semibold'>" . $row['amount'] . "</span>
-                                            </td>
-                                            <td class='px-4 py-3 text-sm flex justify-between'> 
-                                                <p>" . $row['date'] . "</p>
-                                                <i class='fa-solid fa-pen edit cursor-pointer'></i>
-                                                <i class='fa-solid fa-trash text-red-500 cursor-pointer bin'></i>
-                                            </td>
-                                        </tr>
-                                    ";
-                                }
-                            } else {
-                                echo "<h2 class='absolute top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] text-gray-300 text-lg'>there is nothing to show</h2>";
-                            }
-                            ?>
+    </nav>
 
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <!-- expenses Table -->
-            <div id="expenses" class="w-full overflow-y-scroll [scrollbar-width:none] rounded-lg shadow-xs h-80 bg-gray-700 text-white relative">
-                <div class="w-full overflow-x-auto">
-                    <table class="w-full whitespace-no-wrap">
-                        <thead>
-                            <tr
-                                class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b dark:border-gray-700 bg-gray-50 dark:text-gray-400 dark:bg-gray-800">
-                                <th class="px-4 py-3">Amount</th>
-                                <th class="px-4 py-3">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody
-                            class="bg-white divide-y dark:divide-gray-700 dark:bg-gray-800">
-                            <?php
-                            $expenses = "SELECT * FROM expense WHERE MONTH(date) = MONTH(CURRENT_DATE) AND YEAR(date) = YEAR(CURRENT_DATE) AND user_id = {$_SESSION['user-id']}";
-                            $the_result = mysqli_query($connect, $expenses);
-                            if (mysqli_num_rows($the_result) > 0) {
-                                while ($row = mysqli_fetch_assoc($the_result)) {
-                                    echo "
-                                        <tr data-id=" . $row['id'] . " class='text-white element'>
-                                            <td class='px-4 py-3 text-sm'>
-                                                $ <span class='text-green-500 font-semibold'>" . $row['amount'] . "</span>
-                                            </td>
-                                            <td class='px-4 py-3 text-sm flex justify-between dates'> 
-                                                " . $row['date'] . "
-                                                <i class='fa-solid fa-pen edit cursor-pointer'></i>
-                                                <i class='fa-solid fa-trash text-red-500 cursor-pointer bin'></i>
-                                            </td>
-                                            </tr>
-                                    ";
-                                }
-                            } else {
-                                echo "<h2 class='absolute top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] text-gray-300 text-lg'>there is nothing to show</h2>";
-                            }
-                            ?>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
-                        </tbody>
-                    </table>
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p class="text-gray-500 mt-1">Manage your cards and track your transactions.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+
+            <div class="col-span-1 lg:col-span-1">
+                <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Main Card</h2>
+                <div class="relative h-56 w-full bg-gradient-to-br from-indigo-600 to-blue-800 rounded-2xl shadow-xl overflow-hidden text-white transition-transform hover:scale-[1.02] duration-300">
+                    <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl"></div>
+                    <div class="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl"></div>
+
+                    <div class="p-6 flex flex-col justify-between h-full relative z-10">
+                        <div class="flex justify-between items-start">
+                            <div class="w-12 h-9 border border-yellow-400/50 bg-yellow-400/20 rounded flex items-center justify-center">
+                                <div class="w-8 h-6 border border-yellow-400/60 rounded-sm grid grid-cols-2 gap-1"></div>
+                            </div>
+                            <span class="font-bold italic text-lg opacity-80">VISA</span>
+                        </div>
+
+                        <div class="mt-4">
+                            <p class="text-xs text-indigo-200 mb-1">Current Balance</p>
+                            <p class="text-3xl font-bold tracking-tight">$ <?php echo $row['balance'] ?></p>
+                        </div>
+
+                        <div class="flex justify-between items-end">
+                            <div>
+                                <p class="text-xs text-indigo-200 uppercase">Card Holder</p>
+                                <p class="font-medium tracking-wide"><?php echo $row['card_holder'] ?></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-indigo-200 uppercase text-right">Expires</p>
+                                <p class="font-medium tracking-widest"><?php echo $row['ex_date'] ?></p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <div class="col-span-1 lg:col-span-1 flex flex-col">
+                <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Add Card</h2>
+                <button class="h-56 w-full border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center text-gray-400 hover:border-indigo-500 hover:text-indigo-500 hover:bg-indigo-50 transition-all duration-200 group bg-white">
+                    <div class="w-12 h-12 rounded-full bg-gray-100 group-hover:bg-indigo-100 flex items-center justify-center mb-3 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                    </div>
+                    <span class="font-medium text-sm">Add New Card</span>
+                </button>
+            </div>
+
+            <div class="col-span-1 lg:col-span-1 flex flex-col">
+                <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Actions</h2>
+
+                <button onclick="document.getElementById('transaction-modal').classList.remove('hidden')" class="h-56 w-full bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300 group flex flex-col items-center justify-center gap-4 cursor-pointer relative overflow-hidden">
+                    <div class="absolute inset-0 bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                    <div class="w-16 h-16 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center z-10 group-hover:scale-110 transition-transform duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                    </div>
+
+                    <div class="text-center z-10">
+                        <span class="block font-bold text-lg text-gray-800 group-hover:text-indigo-700">Add Transaction</span>
+                        <span class="text-sm text-gray-500">Income or Expense</span>
+                    </div>
+                </button>
+            </div>
         </div>
-    </section>
-    <!-- chart js section -->
-    <section class="bg-black">
-        <h1 class="text-center font-bold text-3xl text-white py-16">Statistics</h1>
-        <div class="h-80 md:px-16">
-            <canvas id="myChart"></canvas>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-900">Recent Transactions</h3>
+                <button class="text-indigo-600 text-sm font-medium hover:text-indigo-800 hover:underline">View All</button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50/50">
+                            <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">Transaction</th>
+                            <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">Category</th>
+                            <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">Date</th>
+                            <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">Status</th>
+                            <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider text-right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="py-4 px-6 flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-900">Upwork Revenue</p>
+                                    <p class="text-xs text-gray-500">Freelancing</p>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6 text-sm text-gray-600">Income</td>
+                            <td class="py-4 px-6 text-sm text-gray-600">Oct 24, 2025</td>
+                            <td class="py-4 px-6">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Completed
+                                </span>
+                            </td>
+                            <td class="py-4 px-6 text-sm font-bold text-emerald-600 text-right">+ $850.00</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="py-4 px-6 text-sm text-gray-400 italic text-center" colspan="5">
+                                No more recent transactions to show
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </section>
-    <!-- income form -->
-    <div class="income-form-bg  hidden  bg-[rgba(0,0,0,.1)] fixed backdrop-blur-sm w-full h-[100vh] flex justify-center items-center top-0">
-        <form action="<?php $_SERVER['PHP_SELF']?>" method="post" class="top-1/2 left-1/2  bg-white shadow-xl rounded-lg px-6 py-4 flex flex-col gap-1">
-            <label>amount:</label>
-            <input required type="text" name="income-amount" placeholder="100.00" class="bg-gray-200 rounded-lg w-80 py-2 pl-3"><br><br>
-            <label>description:</label>
-            <input required type="text" name="income-description" placeholder="from ?" class="bg-gray-200 rounded-lg w-80 py-2 pl-3"><br><br>
-            <label>date:</label>
-            <input type="date" name="income-date" class="bg-gray-200 rounded-lg w-80 py-2 pl-3"><br><br>
-            <input type="submit" name="income-submit" class="bg-green-400 rounded-lg w-80 py-2 text-white">
+
+    </main>
+
+
+    <div id="transaction-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm transition-opacity duration-300">
+
+        <form action="" method="post" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+
+            <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 class="text-xl font-bold text-gray-800">New Transaction</h3>
+                <button type="button" onclick="document.getElementById('transaction-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="px-8 py-6 space-y-5">
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Category</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="category" value="income" class="peer sr-only" checked>
+                            <div class="rounded-xl border border-gray-200 py-3 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 transition-all flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                                </svg>
+                                Income
+                            </div>
+                        </label>
+
+                        <label class="cursor-pointer">
+                            <input type="radio" name="category" value="expense" class="peer sr-only">
+                            <div class="rounded-xl border border-gray-200 py-3 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50 peer-checked:border-rose-500 peer-checked:bg-rose-50 peer-checked:text-rose-700 transition-all flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
+                                </svg>
+                                Expense
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Title</label>
+                    <input required type="text" name="description" placeholder="e.g. Salary, Grocery Shopping..."
+                        class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Amount</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</span>
+                        <input required type="number" step="0.01" name="amount" placeholder="0.00"
+                            class="w-full rounded-xl border-gray-200 bg-gray-50 pl-8 pr-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-bold text-lg">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Date</label>
+                    <input type="date" name="date"
+                        class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium">
+                </div>
+            </div>
+
+            <div class="px-8 py-5 bg-gray-50 border-t border-gray-100 flex gap-3">
+                <button type="button" onclick="document.getElementById('transaction-modal').classList.add('hidden')" class="w-1/3 rounded-xl border border-gray-300 bg-white py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" name="save_transaction" class="w-2/3 rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 hover:shadow-indigo-500/30 transition-all transform active:scale-[0.98]">
+                    Save Transaction
+                </button>
+            </div>
+
         </form>
     </div>
-    <!-- expense form -->
-    <div class="expense-form-bg  hidden  bg-[rgba(0,0,0,.1)] fixed backdrop-blur-sm w-full h-[100vh] flex justify-center items-center top-0">
-        <form action="<?php $_SERVER['PHP_SELF']?>" method="post" class="top-1/2 left-1/2  bg-white shadow-xl rounded-lg px-6 py-4 flex flex-col gap-1">
-            <label>amount:</label>
-            <input required type="text" name="expense-amount" placeholder="100.00" class="bg-gray-200 rounded-lg w-80 py-2 pl-3"><br><br>
-            <label>description:</label>
-            <input required type="text" name="expense-description" placeholder="from ?" class="bg-gray-200 rounded-lg w-80 py-2 pl-3"><br><br>
-            <label>date:</label>
-            <input type="date" name="expense-date" class="bg-gray-200 rounded-lg w-80 py-2 pl-3"><br><br>
-            <input type="submit" name="expense-submit" class="bg-green-400 rounded-lg w-80 py-2 text-white">
-        </form>
-    </div>
-
-    <?php
-    // 1. Re-run queries to fetch all records for the current month
-    // You need ID, amount, and date for the chart to work correctly.
-    $income_chart_sql = "SELECT id, amount, date FROM income WHERE MONTH(date) = MONTH(CURRENT_DATE) AND YEAR(date) = YEAR(CURRENT_DATE) AND user_id = {$_SESSION['user-id']} ORDER BY date ASC";
-    $expense_chart_sql = "SELECT id, amount, date FROM expense WHERE MONTH(date) = MONTH(CURRENT_DATE) AND YEAR(date) = YEAR(CURRENT_DATE) AND user_id = {$_SESSION['user-id']} ORDER BY date ASC";
-
-    $income_chart_result = mysqli_query($connect, $income_chart_sql);
-    $expense_chart_result = mysqli_query($connect, $expense_chart_sql);
-
-    $income_chart_data = [];
-    while ($row = mysqli_fetch_assoc($income_chart_result)) {
-        // Collect data, ensuring 'amount' is treated as a number in JS
-        $income_chart_data[] = ['date' => $row['date'], 'amount' => (float)$row['amount']];
-    }
-
-    $expense_chart_data = [];
-    while ($row = mysqli_fetch_assoc($expense_chart_result)) {
-        $expense_chart_data[] = ['date' => $row['date'], 'amount' => (float)$row['amount']];
-    }
-
-    // 2. Encode PHP arrays to JSON strings
-    $json_incomes = json_encode($income_chart_data);
-    $json_expenses = json_encode($expense_chart_data);
-    ?>
-    <script>
-        const incomeDataFromPHP = <?php echo $json_incomes; ?>;
-        const expenseDataFromPHP = <?php echo $json_expenses; ?>;
-    </script>
 </body>
 <script src="script.js"></script>
 

@@ -38,7 +38,8 @@ CREATE TABLE users(
 
 SELECT * FROM users
 
-TRUNCATE users
+TRUNCATE users;
+DELETE FROM users;
 
 INSERT INTO users(name , email , password) VALUES('gumball', 'imad@gmail.com','12345')
 
@@ -51,3 +52,23 @@ use smart_wallet_2
 
 ALTER TABLE users ADD otp_code VARCHAR(6);
 
+CREATE TABLE cards(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    card_number VARCHAR(19) NOT NULL,
+    ex_date VARCHAR(6) NOT null,
+    CVC VARCHAR(3) NOT NULL,
+    balance DECIMAL(10 , 2) DEFAULT 0.00,
+    user_id INT,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+)
+
+ALTER TABLE cards ADD COLUMN card_holder VARCHAR(250) NOT NULL;
+
+ALTER TABLE cards DROP card_name;
+
+ALTER TABLE expense ADD COLUMN card_id INT;
+ALTER TABLE expense ADD FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE;
+
+SELECT * FROM cards
+
+DELETE FROM users

@@ -2,6 +2,10 @@
 include('connect.php');
 
 session_start();
+
+if(isset($_SESSION['user-id'])){
+    echo 'yes';
+}
 // Login form
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['login'])) {
@@ -56,10 +60,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $sql = "INSERT INTO users(name , email, password) VALUES('$name', '$email','$hash')";
             mysqli_query($connect, $sql);
 
+            
             // gets you the current id of the operation u did , so the last id has inserted
             $new_id = mysqli_insert_id($connect);
-
+            
             $_SESSION['user-id'] = $new_id;
+            
+            // create card
+            // $card_num = rand(1000000000000000, 9999999999999999);
+            // $ex_date = rand(1,31) . "/" . rand(26,31);
+            // $cvc = rand(100,999);
+            // $sql = "INSERT INTO cards(card_number , ex_date, cvc, user_id) VALUES('$card_num', '$ex_date','$cvc', $new_id)";
+            // mysqli_query($connect, $sql);
+
 
             //////////////////////////////////////////
             $otp = rand(100000, 999999);

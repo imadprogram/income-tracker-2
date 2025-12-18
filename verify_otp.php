@@ -23,7 +23,7 @@ try{
                 unset($_SESSION['temp_id']);
                 mysqli_query($connect, "UPDATE users SET otp_code = NULL WHERE id = {$user_id}");
 
-                header('Location: dashboard.php');
+                header('Location: mainCard.php');
                 exit();
             }else{
                 echo "wrong code !";
