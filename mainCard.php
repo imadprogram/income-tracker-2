@@ -12,7 +12,7 @@ if (isset($_POST['save_card'])) {
     $card_cvc = $_POST['cvc'];
     $user_id = $_SESSION['user-id'];
 
-    mysqli_query($connect, "INSERT INTO cards(  card_inded,
+    mysqli_query($connect, "INSERT INTO cards(  card_index,
                                                 card_holder,
                                                 card_number,
                                                 ex_date,

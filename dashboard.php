@@ -18,15 +18,15 @@ $row = mysqli_fetch_assoc($result);
 $the_name = $row['name'];
 // echo $the_name;
 
-// card infos
-$infos = mysqli_query($connect, "SELECT * FROM cards WHERE user_id = {$_SESSION['user-id']}");
-$row = mysqli_fetch_assoc($infos);
+// first card infos
+$first_info = mysqli_query($connect, "SELECT * FROM cards WHERE user_id = {$_SESSION['user-id']} AND card_index = 1");
+$first_row = mysqli_fetch_assoc($first_info);
 
 // card balance
 $income_balance = mysqli_query($connect, "SELECT sum(amount) AS sum FROM transactions WHERE user_id = {$_SESSION['user-id']} AND type = 'income'");
 $income_sum = mysqli_fetch_assoc($income_balance);
 
-$expense_balance = mysqli_query($connect, "SELECT sum(amount) AS sum FROM transactions WHERE user_id = {$_SESSION['user-id']} AND type = 'income'");
+$expense_balance = mysqli_query($connect, "SELECT sum(amount) AS sum FROM transactions WHERE user_id = {$_SESSION['user-id']} AND type = 'expense'");
 $expense_sum = mysqli_fetch_assoc($expense_balance);
 /////////////
 
@@ -50,13 +50,13 @@ if (isset($_POST['save_transaction'])) {
 // ADD ANOTHER CARD
 if (isset($_POST['save_card'])) {
     $card_index = $_POST['create_card'];
-    $card_number = $_POST['modal_card_number'];
+    $card_number = $_POST['card_number'];
     $card_name = $_POST['card_name'];
     $card_date = $_POST['ex_date'];
     $card_cvc = $_POST['cvc'];
     $user_id = $_SESSION['user-id'];
 
-    mysqli_query($connect, "INSERT INTO cards(  card_inded,
+    mysqli_query($connect, "INSERT INTO cards(  card_index,
                                                 card_holder,
                                                 card_number,
                                                 ex_date,
@@ -161,17 +161,59 @@ if (isset($_POST['save_card'])) {
                         <div class="flex justify-between items-end">
                             <div>
                                 <p class="text-xs text-indigo-200 uppercase">Card Holder</p>
-                                <p class="font-medium tracking-wide"><?php echo $row['card_holder'] ?></p>
+                                <p class="font-medium tracking-wide"><?php echo $first_row['card_holder'] ?></p>
                             </div>
                             <div>
                                 <p class="text-xs text-indigo-200 uppercase text-right">Expires</p>
-                                <p class="font-medium tracking-widest"><?php echo $row['ex_date'] ?></p>
+                                <p class="font-medium tracking-widest"><?php echo $first_row['ex_date'] ?></p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            <?php
+            $infos = mysqli_query($connect, "SELECT * FROM cards WHERE user_id = {$_SESSION['user-id']} AND card_index = 2");
 
+            if (mysqli_num_rows($infos) > 0){
+                while($row = mysqli_fetch_assoc($infos)){
+
+                    echo "
+                <div class='col-span-1 lg:col-span-1'>
+                    <h2 class='text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4'>Second Card</h2>
+                    <div class='relative h-56 w-full bg-gradient-to-br from-indigo-600 to-blue-800 rounded-2xl shadow-xl overflow-hidden text-white transition-transform hover:scale-[1.02] duration-300'>
+                        <div class='absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl'></div>
+                        <div class='absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl'></div>
+    
+                        <div class='p-6 flex flex-col justify-between h-full relative z-10'>
+                            <div class='flex justify-between items-start'>
+                                <div class='w-12 h-9 border border-yellow-400/50 bg-yellow-400/20 rounded flex items-center justify-center'>
+                                    <div class='w-8 h-6 border border-yellow-400/60 rounded-sm grid grid-cols-2 gap-1'></div>
+                                </div>
+                                <span class='font-bold italic text-lg opacity-80'>VISA</span>
+                            </div>
+    
+                            <div class='mt-4'>
+                                <p class='text-xs text-indigo-200 mb-1'>Current Balance</p>
+                                <p class='text-3xl font-bold tracking-tight'>$ ". $income_sum['sum'] - $expense_sum['sum']."</p>
+                            </div>
+    
+                            <div class='flex justify-between items-end'>
+                                <div>
+                                    <p class='text-xs text-indigo-200 uppercase'>Card Holder</p>
+                                    <p class='font-medium tracking-wide'>".$row['card_holder']."</p>
+                                </div>
+                                <div>
+                                    <p class='text-xs text-indigo-200 uppercase text-right'>Expires</p>
+                                    <p class='font-medium tracking-widest'>". $row['ex_date']."</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                    ";
+                }
+            }
+            ?>
             <div class="col-span-1 lg:col-span-1 flex flex-col">
                 <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Add Card</h2>
                 <button onclick="document.getElementById('add-card-modal').classList.remove('hidden')" class="h-56 w-full border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center text-gray-400 hover:border-indigo-500 hover:text-indigo-500 hover:bg-indigo-50 transition-all duration-200 group bg-white cursor-pointer">
@@ -223,11 +265,11 @@ if (isset($_POST['save_card'])) {
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         <?php
-                        $user_id = $_SESSION['user-id'];
-                        $the_results = mysqli_query($connect, "SELECT * FROM transactions WHERE user_id = $user_id");
-                        if (mysqli_num_rows($the_results) > 0) {
-                            while ($row = mysqli_fetch_assoc($the_results)) {
-                                echo "
+                    $user_id = $_SESSION['user-id'];
+                    $the_results = mysqli_query($connect, "SELECT * FROM transactions WHERE user_id = $user_id");
+                    if (mysqli_num_rows($the_results) > 0) {
+                        while ($row = mysqli_fetch_assoc($the_results)) {
+                            echo "
                         <tr class='hover:bg-gray-50 transition-colors'>
                             <td class='py-4 px-6 flex items-center gap-3'>
                                 <div class='w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center'>
@@ -247,13 +289,13 @@ if (isset($_POST['save_card'])) {
                                 </span>
                             </td>
                             ";
-                                if ($row['type'] == 'income') {
-                                    echo "<td class='py-4 px-6 text-sm font-bold text-emerald-600 text-right'>+ $" . $row['amount'] . "</td>";
-                                } else if ($row['type'] == 'expense') {
-                                    echo "<td class='py-4 px-6 text-sm font-bold text-red-600 text-right'>- $" . $row['amount'] . "</td>";
-                                }
+                            if ($row['type'] == 'income') {
+                                echo "<td class='py-4 px-6 text-sm font-bold text-emerald-600 text-right'>+ $" . $row['amount'] . "</td>";
+                            } else if ($row['type'] == 'expense') {
+                                echo "<td class='py-4 px-6 text-sm font-bold text-red-600 text-right'>- $" . $row['amount'] . "</td>";
                             }
                         }
+                    }
                         ?>
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="py-4 px-6 text-sm text-gray-400 italic text-center" colspan="5">

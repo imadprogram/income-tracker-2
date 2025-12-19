@@ -88,6 +88,6 @@ CREATE TABLE transactions(
 
 ALTER TABLE transactions ADD COLUMN type ENUM('income' , 'expense') NOT NULL
 
-SELECT * FROM transactions
+SELECT * FROM cards
 
-DELETE FROM transactions
+DELETE FROM users
