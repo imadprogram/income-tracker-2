@@ -9,8 +9,8 @@ if(isset($_SESSION['user-id'])){
 // Login form
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['login'])) {
-        $email = $_POST['already-email'];
-        $password = $_POST['already-pass'];
+        $email = mysqli_escape_string($connect, $_POST['already-email']);
+        $password = mysqli_escape_string($connect,$_POST['already-pass']) ;
         $sql = "SELECT * FROM users WHERE email = '$email'";
         $result = mysqli_query($connect, $sql);
         if (mysqli_num_rows($result) == 1) {
@@ -28,17 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 mysqli_query($connect, $update_otp);
 
-                require 'send_email.php';
-
-                $email_status = sendOTP($email, $otp);
-
-                if ($email_status === true) {
-                    $_SESSION['temp_id'] = $user_id;
-                    header('Location: verify_otp.php');
-                    exit();
-                } else {
-                    echo "there was an error" . $email_status;
-                }
+                header('Location: dashboard.php');
                 //////////////////////////////////////////
             } else {
                 echo 'pass is wrong';
@@ -47,8 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             echo 'there is no email like that';
         }
     } else if (isset($_POST['signup'])) {
-        $name = $_POST['user-name'];
-        $email = $_POST['user-email'];
+        $name = mysqli_escape_string($connect, $_POST['user-name']) ;
+        $email = mysqli_escape_string($connect,$_POST['user-email']) ;
         $password = $_POST['user-pass'];
         $hash = password_hash($password, PASSWORD_DEFAULT);
 

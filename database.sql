@@ -62,6 +62,8 @@ CREATE TABLE cards(
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 )
 
+ALTER TABLE cards ADD COLUMN card_index INT NOT NULL;
+
 ALTER TABLE cards ADD COLUMN card_holder VARCHAR(250) NOT NULL;
 
 ALTER TABLE cards DROP card_name;
@@ -72,3 +74,20 @@ ALTER TABLE expense ADD FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CAS
 SELECT * FROM cards
 
 DELETE FROM users
+
+CREATE TABLE transactions(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
+    card_id INT,
+    description VARCHAR(250),
+    amount DECIMAL(9,2),
+    date DATE NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
+)
+
+ALTER TABLE transactions ADD COLUMN type ENUM('income' , 'expense') NOT NULL
+
+SELECT * FROM transactions
+
+DELETE FROM transactions

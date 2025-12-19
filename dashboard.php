@@ -10,84 +10,6 @@ if (!isset($_SESSION['user-id'])) {
     header('Location: index.php');
 }
 
-if (isset($_POST["income-submit"])) {
-    try {
-        $amount = mysqli_real_escape_string($connect, $_POST["income-amount"]);
-        $description = mysqli_real_escape_string($connect, $_POST["income-description"]);
-        $date = empty($_POST["income-date"]) ? date('y-m-d') : mysqli_real_escape_string($connect, $_POST["income-date"]);
-        $sql_insert = "INSERT INTO income (user_id ,amount , description,  date) VALUES({$_SESSION['user-id']} ,{$amount}, '{$description}', '{$date}')";
-
-        mysqli_query($connect, $sql_insert);
-    } catch (mysqli_sql_exception $e) {
-        echo $e->getMessage();
-    }
-}
-if (isset($_POST["expense-submit"])) {
-    try {
-        $amount = mysqli_real_escape_string($connect, $_POST["expense-amount"]);
-        $description = mysqli_real_escape_string($connect, $_POST["expense-description"]);
-        $date = empty($_POST["expense-date"]) ? date('y-m-d') : mysqli_real_escape_string($connect, $_POST["expense-date"]);
-        $sql_insert = "INSERT INTO expense (user_id ,amount , description,  date) VALUES({$_SESSION['user-id']},{$amount}, '{$description}', '{$date}')";
-
-        mysqli_query($connect, $sql_insert);
-    } catch (mysqli_sql_exception $e) {
-        echo $e->getMessage();
-    }
-}
-// income total amount
-$income_sum = "SELECT sum(amount) AS total_income FROM income WHERE user_id = {$_SESSION['user-id']}";
-
-$result_income = mysqli_query($connect, $income_sum);
-$income_total = 0;
-if ($result_income) {
-    $row = mysqli_fetch_assoc($result_income);
-    $income_total = $row['total_income'];
-}
-// expense total amount
-$expense_sum = "SELECT sum(amount) AS total_expense FROM expense WHERE user_id = {$_SESSION['user-id']}";
-
-$result_expense = mysqli_query($connect, $expense_sum);
-$expense_total = 0;
-if ($result_expense) {
-    $row = mysqli_fetch_assoc($result_expense);
-    $expense_total = $row['total_expense'];
-}
-
-// update infos of income
-if (!empty($_POST['income-new-submit'])) {
-    $amount = $_POST['income-new-amount'];
-    $description = $_POST['income-new-description'];
-    $date = $_POST['income-new-date'];
-    $id = $_POST['id'];
-    $sql = "UPDATE income SET amount = $amount WHERE id = $id AND user_id = {$_SESSION['user-id']}";
-
-    mysqli_query($connect, $sql);
-}
-// update infos of expense
-if (!empty($_POST['expense-new-submit'])) {
-    $amount = $_POST['expense-new-amount'];
-    $description = $_POST['expense-new-description'];
-    $date = $_POST['expense-new-date'];
-    $id = $_POST['id'];
-    $sql = "UPDATE expense SET amount = $amount WHERE id = $id AND user_id = {$_SESSION['user-id']}";
-
-    mysqli_query($connect, $sql);
-}
-
-// delete infos of income
-if (!empty($_POST['income-delete'])) {
-    $id = $_POST['id'];
-    $sql = "DELETE FROM income WHERE id = $id AND user_id = {$_SESSION['user-id']}";
-
-    mysqli_query($connect, $sql);
-}
-// delete infos of expense
-if (!empty($_POST['expense-delete'])) {
-    $id = $_POST['id'];
-    $sql = "DELETE FROM expense WHERE id = $id AND user_id = {$_SESSION['user-id']}";
-
-    mysqli_query($connect, $sql);
-}
 
 // get the name of the user
 $sql = "SELECT name FROM users WHERE id = {$_SESSION['user-id']}";
@@ -99,6 +21,55 @@ $the_name = $row['name'];
 // card infos
 $infos = mysqli_query($connect, "SELECT * FROM cards WHERE user_id = {$_SESSION['user-id']}");
 $row = mysqli_fetch_assoc($infos);
+
+// card balance
+$income_balance = mysqli_query($connect, "SELECT sum(amount) AS sum FROM transactions WHERE user_id = {$_SESSION['user-id']} AND type = 'income'");
+$income_sum = mysqli_fetch_assoc($income_balance);
+
+$expense_balance = mysqli_query($connect, "SELECT sum(amount) AS sum FROM transactions WHERE user_id = {$_SESSION['user-id']} AND type = 'income'");
+$expense_sum = mysqli_fetch_assoc($expense_balance);
+/////////////
+
+// submit transaction
+if (isset($_POST['save_transaction'])) {
+    $transaction_category = $_POST['category'];
+    $transaction_amount = $_POST['amount'];
+    $transaction_date = !empty($_POST['date']) ? $_POST['date'] : date('Y-m-d');
+    $user_id = $_SESSION['user-id'];
+    //
+    $sql_id = "SELECT id FROM cards WHERE user_id = $user_id";
+    $results = mysqli_query($connect, $sql_id);
+
+    $card_row = mysqli_fetch_assoc($results);
+    $card_id = $card_row['id'];
+    //
+    $type = $_POST['type'];
+    mysqli_query($connect, "INSERT INTO transactions(user_id , card_id , description , amount , date, type) VALUES($user_id ,$card_id ,'$transaction_category' , $transaction_amount , '$transaction_date', '$type')");
+}
+
+// ADD ANOTHER CARD
+if (isset($_POST['save_card'])) {
+    $card_index = $_POST['create_card'];
+    $card_number = $_POST['modal_card_number'];
+    $card_name = $_POST['card_name'];
+    $card_date = $_POST['ex_date'];
+    $card_cvc = $_POST['cvc'];
+    $user_id = $_SESSION['user-id'];
+
+    mysqli_query($connect, "INSERT INTO cards(  card_inded,
+                                                card_holder,
+                                                card_number,
+                                                ex_date,
+                                                CVC,
+                                                user_id) VALUES($card_index,
+                                                                '$card_name',
+                                                                '$card_number',
+                                                                '$card_date',
+                                                                '$card_cvc',
+                                                                $user_id)");
+
+    // DISPLAY THE CARD
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -139,7 +110,15 @@ $row = mysqli_fetch_assoc($infos);
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <span class="text-sm font-medium text-gray-500">Welcome, <span class="text-gray-900 font-bold">Imad</span></span>
+                    <span class="text-sm font-medium text-gray-500">Welcome,
+                        <span class="text-gray-900 font-bold">
+                            <?php
+                            $sqll = "SELECT * FROM users WHERE id = {$_SESSION['user-id']}";
+                            $resultt = mysqli_query($connect, $sql);
+                            $roww = mysqli_fetch_assoc($resultt);
+                            echo $roww['name'] ?>
+                        </span>
+                    </span>
                     <a href="logout.php" class="bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
                         <span>Logout</span>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
@@ -176,7 +155,7 @@ $row = mysqli_fetch_assoc($infos);
 
                         <div class="mt-4">
                             <p class="text-xs text-indigo-200 mb-1">Current Balance</p>
-                            <p class="text-3xl font-bold tracking-tight">$ <?php echo $row['balance'] ?></p>
+                            <p class="text-3xl font-bold tracking-tight">$ <?php echo $income_sum['sum'] - $expense_sum['sum'] ?></p>
                         </div>
 
                         <div class="flex justify-between items-end">
@@ -195,7 +174,7 @@ $row = mysqli_fetch_assoc($infos);
 
             <div class="col-span-1 lg:col-span-1 flex flex-col">
                 <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Add Card</h2>
-                <button class="h-56 w-full border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center text-gray-400 hover:border-indigo-500 hover:text-indigo-500 hover:bg-indigo-50 transition-all duration-200 group bg-white">
+                <button onclick="document.getElementById('add-card-modal').classList.remove('hidden')" class="h-56 w-full border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center text-gray-400 hover:border-indigo-500 hover:text-indigo-500 hover:bg-indigo-50 transition-all duration-200 group bg-white cursor-pointer">
                     <div class="w-12 h-12 rounded-full bg-gray-100 group-hover:bg-indigo-100 flex items-center justify-center mb-3 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -243,27 +222,39 @@ $row = mysqli_fetch_assoc($infos);
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="py-4 px-6 flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+                        <?php
+                        $user_id = $_SESSION['user-id'];
+                        $the_results = mysqli_query($connect, "SELECT * FROM transactions WHERE user_id = $user_id");
+                        if (mysqli_num_rows($the_results) > 0) {
+                            while ($row = mysqli_fetch_assoc($the_results)) {
+                                echo "
+                        <tr class='hover:bg-gray-50 transition-colors'>
+                            <td class='py-4 px-6 flex items-center gap-3'>
+                                <div class='w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center'>
+                                    <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-5 h-5'>
+                                        <path stroke-linecap='round' stroke-linejoin='round' d='M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z' />
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-sm font-semibold text-gray-900">Upwork Revenue</p>
-                                    <p class="text-xs text-gray-500">Freelancing</p>
+                                    <p class='text-sm font-semibold text-gray-900'>" . $row['description'] . "</p>
                                 </div>
                             </td>
-                            <td class="py-4 px-6 text-sm text-gray-600">Income</td>
-                            <td class="py-4 px-6 text-sm text-gray-600">Oct 24, 2025</td>
-                            <td class="py-4 px-6">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <td class='py-4 px-6 text-sm text-gray-600'>" . $row['type'] . "</td>
+                            <td class='py-4 px-6 text-sm text-gray-600'>" . $row['date'] . "</td>
+                            <td class='py-4 px-6'>
+                                <span class='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800'>
                                     Completed
                                 </span>
                             </td>
-                            <td class="py-4 px-6 text-sm font-bold text-emerald-600 text-right">+ $850.00</td>
-                        </tr>
+                            ";
+                                if ($row['type'] == 'income') {
+                                    echo "<td class='py-4 px-6 text-sm font-bold text-emerald-600 text-right'>+ $" . $row['amount'] . "</td>";
+                                } else if ($row['type'] == 'expense') {
+                                    echo "<td class='py-4 px-6 text-sm font-bold text-red-600 text-right'>- $" . $row['amount'] . "</td>";
+                                }
+                            }
+                        }
+                        ?>
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="py-4 px-6 text-sm text-gray-400 italic text-center" colspan="5">
                                 No more recent transactions to show
@@ -278,9 +269,7 @@ $row = mysqli_fetch_assoc($infos);
 
 
     <div id="transaction-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm transition-opacity duration-300">
-
         <form action="" method="post" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-
             <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <h3 class="text-xl font-bold text-gray-800">New Transaction</h3>
                 <button type="button" onclick="document.getElementById('transaction-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 transition-colors">
@@ -289,14 +278,12 @@ $row = mysqli_fetch_assoc($infos);
                     </svg>
                 </button>
             </div>
-
             <div class="px-8 py-6 space-y-5">
-
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Category</label>
                     <div class="grid grid-cols-2 gap-3">
                         <label class="cursor-pointer">
-                            <input type="radio" name="category" value="income" class="peer sr-only" checked>
+                            <input type="radio" name="type" value="income" class="peer sr-only" checked>
                             <div class="rounded-xl border border-gray-200 py-3 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 transition-all flex items-center justify-center gap-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M7 11l5-5m0 0l5 5m-5-5v12" />
@@ -304,9 +291,8 @@ $row = mysqli_fetch_assoc($infos);
                                 Income
                             </div>
                         </label>
-
                         <label class="cursor-pointer">
-                            <input type="radio" name="category" value="expense" class="peer sr-only">
+                            <input type="radio" name="type" value="expense" class="peer sr-only">
                             <div class="rounded-xl border border-gray-200 py-3 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50 peer-checked:border-rose-500 peer-checked:bg-rose-50 peer-checked:text-rose-700 transition-all flex items-center justify-center gap-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
@@ -316,29 +302,40 @@ $row = mysqli_fetch_assoc($infos);
                         </label>
                     </div>
                 </div>
-
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Title</label>
-                    <input required type="text" name="description" placeholder="e.g. Salary, Grocery Shopping..."
-                        class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Category</label>
+                    <div class="relative">
+                        <select required name="category" class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium appearance-none cursor-pointer">
+                            <option value="" disabled selected>Select a category</option>
+                            <option value="Salary">Salary</option>
+                            <option value="Freelance">Freelance</option>
+                            <option value="Food">Food & Dining</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Bills">Bills & Utilities</option>
+                            <option value="Health">Health</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
                 </div>
-
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Amount</label>
                     <div class="relative">
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</span>
-                        <input required type="number" step="0.01" name="amount" placeholder="0.00"
-                            class="w-full rounded-xl border-gray-200 bg-gray-50 pl-8 pr-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-bold text-lg">
+                        <input required type="number" step="0.01" name="amount" placeholder="0.00" class="w-full rounded-xl border-gray-200 bg-gray-50 pl-8 pr-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-bold text-lg">
                     </div>
                 </div>
-
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Date</label>
-                    <input type="date" name="date"
-                        class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium">
+                    <input type="date" name="date" class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium">
                 </div>
             </div>
-
             <div class="px-8 py-5 bg-gray-50 border-t border-gray-100 flex gap-3">
                 <button type="button" onclick="document.getElementById('transaction-modal').classList.add('hidden')" class="w-1/3 rounded-xl border border-gray-300 bg-white py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
                     Cancel
@@ -347,9 +344,97 @@ $row = mysqli_fetch_assoc($infos);
                     Save Transaction
                 </button>
             </div>
-
         </form>
     </div>
+
+    <div id="add-card-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm transition-opacity duration-300">
+        <form action="" method="post" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+
+            <input type="hidden" name="create_card" value="2">
+
+            <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 class="text-xl font-bold text-gray-800">Add New Card</h3>
+                <button type="button" onclick="document.getElementById('add-card-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="px-8 py-6 space-y-5">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Card Number</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                        </div>
+                        <input required type="text" id="modal_card_number" name="card_number" placeholder="0000 0000 0000 0000" maxlength="19"
+                            class="w-full rounded-xl border-gray-200 bg-gray-50 pl-11 pr-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium tracking-widest">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Card Holder</label>
+                    <input required type="text" name="card_name" placeholder="YOUR NAME"
+                        class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium uppercase">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Expires</label>
+                        <input required type="text" id="modal_ex_date" name="ex_date" placeholder="MM/YY" maxlength="5"
+                            class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium text-center">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">CVC</label>
+                        <div class="relative">
+                            <input required type="password" name="cvc" placeholder="123" maxlength="3"
+                                class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium text-center tracking-widest">
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-8 py-5 bg-gray-50 border-t border-gray-100 flex gap-3">
+                <button type="button" onclick="document.getElementById('add-card-modal').classList.add('hidden')" class="w-1/3 rounded-xl border border-gray-300 bg-white py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" name="save_card" class="w-2/3 rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 hover:shadow-indigo-500/30 transition-all transform active:scale-[0.98]">
+                    Save Card
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Auto-space for Card Number in Modal
+        const cardInput = document.getElementById('modal_card_number');
+        if (cardInput) {
+            cardInput.addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/[^\d]/g, '').replace(/(.{4})/g, '$1 ').trim();
+            });
+        }
+
+        // Auto-slash for Date in Modal
+        const dateInput = document.getElementById('modal_ex_date');
+        if (dateInput) {
+            dateInput.addEventListener('input', function(e) {
+                var input = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                if (input.length > 2) {
+                    e.target.value = input.substring(0, 2) + '/' + input.substring(2, 4);
+                } else {
+                    e.target.value = input;
+                }
+            });
+        }
+    </script>
 </body>
 <script src="script.js"></script>
 
