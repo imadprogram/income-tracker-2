@@ -82,7 +82,9 @@ Ce README résume les user stories, les fonctionnalités développées et la str
 
  **[diagramme de cas d'utilisation](https://lucid.app/lucidchart/d82338e3-3bdb-4d46-9ada-9409841965e5/edit?viewport_loc=-34%2C4%2C2618%2C1239%2C.Q4MUjXso07N&invitationId=inv_23e6f087-87b9-4b9e-b579-aa2155e808fe)** 
 
+## ERD
 
+**[ERD](https://lucid.app/lucidchart/d82338e3-3bdb-4d46-9ada-9409841965e5/edit?viewport_loc=-34%2C4%2C2618%2C1239%2C.Q4MUjXso07N&invitationId=inv_23e6f087-87b9-4b9e-b579-aa2155e808fe)**
 ---
 
 Si vous souhaitez améliorer l’interface, ajouter de nouvelles métriques ou intégrer des fonctionnalités avancées (catégories, export PDF, IA…), ce projet est entièrement évolutif.

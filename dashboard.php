@@ -31,6 +31,7 @@ $expense_sum = mysqli_fetch_assoc($expense_balance);
 /////////////
 
 // submit transaction
+$card_id;
 if (isset($_POST['save_transaction'])) {
     $transaction_category = $_POST['category'];
     $transaction_amount = $_POST['amount'];
@@ -41,7 +42,8 @@ if (isset($_POST['save_transaction'])) {
     $results = mysqli_query($connect, $sql_id);
 
     $card_row = mysqli_fetch_assoc($results);
-    $card_id = $card_row['id'];
+    // $card_id = $card_row['id'];
+    $card_id = $_POST['card_id'];
     //
     $type = $_POST['type'];
     mysqli_query($connect, "INSERT INTO transactions(user_id , card_id , description , amount , date, type) VALUES($user_id ,$card_id ,'$transaction_category' , $transaction_amount , '$transaction_date', '$type')");
@@ -141,7 +143,13 @@ if (isset($_POST['save_card'])) {
 
             <div class="col-span-1 lg:col-span-1">
                 <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Main Card</h2>
-                <div class="relative h-56 w-full bg-gradient-to-br from-indigo-600 to-blue-800 rounded-2xl shadow-xl overflow-hidden text-white transition-transform hover:scale-[1.02] duration-300">
+
+                <div onclick="openTransactionModal('<?php echo $first_row['id']; ?>')" class="relative h-56 w-full bg-gradient-to-br from-indigo-600 to-blue-800 rounded-2xl shadow-xl overflow-hidden text-white transition-transform hover:scale-[1.02] duration-300 cursor-pointer group">
+
+                    <div class="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+                        <span class="bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-xs font-bold border border-white/30">Click to Add Transaction</span>
+                    </div>
+
                     <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl"></div>
                     <div class="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl"></div>
 
@@ -171,16 +179,36 @@ if (isset($_POST['save_card'])) {
                     </div>
                 </div>
             </div>
+
             <?php
             $infos = mysqli_query($connect, "SELECT * FROM cards WHERE user_id = {$_SESSION['user-id']} AND card_index = 2");
 
-            if (mysqli_num_rows($infos) > 0){
-                while($row = mysqli_fetch_assoc($infos)){
+            if (mysqli_num_rows($infos) > 0) {
+                while ($row = mysqli_fetch_assoc($infos)) {
+
+                    $current_card_id = $row['id'];
+
+                    $income_query = mysqli_query($connect, "SELECT sum(amount) AS sum FROM transactions WHERE card_id = $current_card_id  AND type = 'income'");
+                    $income_data = mysqli_fetch_assoc($income_query);
+                    $income_total = $income_data['sum'] ?? 0;
+                    
+                    
+                    $expense_query = mysqli_query($connect, "SELECT sum(amount) AS sum FROM transactions WHERE card_id = $current_card_id  AND type = 'expense'");
+                    $expense_data = mysqli_fetch_assoc($expense_query);
+                    $expense_total = $expense_data['sum'] ?? 0;
+
+                    $final_balance = $income_total - $expense_total;
 
                     echo "
                 <div class='col-span-1 lg:col-span-1'>
                     <h2 class='text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4'>Second Card</h2>
-                    <div class='relative h-56 w-full bg-gradient-to-br from-indigo-600 to-blue-800 rounded-2xl shadow-xl overflow-hidden text-white transition-transform hover:scale-[1.02] duration-300'>
+                    
+                    <div onclick=\"openTransactionModal('" . $row['id'] . "')\" class='relative h-56 w-full bg-gradient-to-br from-indigo-600 to-blue-800 rounded-2xl shadow-xl overflow-hidden text-white transition-transform hover:scale-[1.02] duration-300 cursor-pointer group'>
+                        
+                         <div class='absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20'>
+                            <span class='bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-xs font-bold border border-white/30'>Click to Add Transaction</span>
+                        </div>
+
                         <div class='absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl'></div>
                         <div class='absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl'></div>
     
@@ -194,17 +222,17 @@ if (isset($_POST['save_card'])) {
     
                             <div class='mt-4'>
                                 <p class='text-xs text-indigo-200 mb-1'>Current Balance</p>
-                                <p class='text-3xl font-bold tracking-tight'>$ ". $income_sum['sum'] - $expense_sum['sum']."</p>
+                                <p class='text-3xl font-bold tracking-tight'>$ " . $final_balance . "</p>
                             </div>
     
                             <div class='flex justify-between items-end'>
                                 <div>
                                     <p class='text-xs text-indigo-200 uppercase'>Card Holder</p>
-                                    <p class='font-medium tracking-wide'>".$row['card_holder']."</p>
+                                    <p class='font-medium tracking-wide'>" . $row['card_holder'] . "</p>
                                 </div>
                                 <div>
                                     <p class='text-xs text-indigo-200 uppercase text-right'>Expires</p>
-                                    <p class='font-medium tracking-widest'>". $row['ex_date']."</p>
+                                    <p class='font-medium tracking-widest'>" . $row['ex_date'] . "</p>
                                 </div>
                             </div>
                         </div>
@@ -229,7 +257,7 @@ if (isset($_POST['save_card'])) {
             <div class="col-span-1 lg:col-span-1 flex flex-col">
                 <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Actions</h2>
 
-                <button onclick="document.getElementById('transaction-modal').classList.remove('hidden')" class="h-56 w-full bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300 group flex flex-col items-center justify-center gap-4 cursor-pointer relative overflow-hidden">
+                <button onclick="openTransactionModal('<?php echo $first_row['id']; ?>')" class="h-56 w-full bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300 group flex flex-col items-center justify-center gap-4 cursor-pointer relative overflow-hidden">
                     <div class="absolute inset-0 bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                     <div class="w-16 h-16 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center z-10 group-hover:scale-110 transition-transform duration-300">
@@ -240,7 +268,7 @@ if (isset($_POST['save_card'])) {
 
                     <div class="text-center z-10">
                         <span class="block font-bold text-lg text-gray-800 group-hover:text-indigo-700">Add Transaction</span>
-                        <span class="text-sm text-gray-500">Income or Expense</span>
+                        <span class="text-sm text-gray-500">Income or Expense (Main Card)</span>
                     </div>
                 </button>
             </div>
@@ -257,6 +285,7 @@ if (isset($_POST['save_card'])) {
                     <thead>
                         <tr class="bg-gray-50/50">
                             <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">Transaction</th>
+                            <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">card name</th>
                             <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">Category</th>
                             <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">Date</th>
                             <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">Status</th>
@@ -265,11 +294,11 @@ if (isset($_POST['save_card'])) {
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         <?php
-                    $user_id = $_SESSION['user-id'];
-                    $the_results = mysqli_query($connect, "SELECT * FROM transactions WHERE user_id = $user_id");
-                    if (mysqli_num_rows($the_results) > 0) {
-                        while ($row = mysqli_fetch_assoc($the_results)) {
-                            echo "
+                        $user_id = $_SESSION['user-id'];
+                        $the_results = mysqli_query($connect, "SELECT * FROM transactions WHERE user_id = $user_id ORDER BY id DESC LIMIT 5");
+                        if (mysqli_num_rows($the_results) > 0) {
+                            while ($row = mysqli_fetch_assoc($the_results)) {
+                                echo "
                         <tr class='hover:bg-gray-50 transition-colors'>
                             <td class='py-4 px-6 flex items-center gap-3'>
                                 <div class='w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center'>
@@ -281,6 +310,7 @@ if (isset($_POST['save_card'])) {
                                     <p class='text-sm font-semibold text-gray-900'>" . $row['description'] . "</p>
                                 </div>
                             </td>
+                            <td class='py-4 px-6 text-sm text-gray-600'>" . $row['card_id'] . "</td>
                             <td class='py-4 px-6 text-sm text-gray-600'>" . $row['type'] . "</td>
                             <td class='py-4 px-6 text-sm text-gray-600'>" . $row['date'] . "</td>
                             <td class='py-4 px-6'>
@@ -289,13 +319,13 @@ if (isset($_POST['save_card'])) {
                                 </span>
                             </td>
                             ";
-                            if ($row['type'] == 'income') {
-                                echo "<td class='py-4 px-6 text-sm font-bold text-emerald-600 text-right'>+ $" . $row['amount'] . "</td>";
-                            } else if ($row['type'] == 'expense') {
-                                echo "<td class='py-4 px-6 text-sm font-bold text-red-600 text-right'>- $" . $row['amount'] . "</td>";
+                                if ($row['type'] == 'income') {
+                                    echo "<td class='py-4 px-6 text-sm font-bold text-emerald-600 text-right'>+ $" . $row['amount'] . "</td>";
+                                } else if ($row['type'] == 'expense') {
+                                    echo "<td class='py-4 px-6 text-sm font-bold text-red-600 text-right'>- $" . $row['amount'] . "</td>";
+                                }
                             }
                         }
-                    }
                         ?>
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="py-4 px-6 text-sm text-gray-400 italic text-center" colspan="5">
@@ -312,6 +342,9 @@ if (isset($_POST['save_card'])) {
 
     <div id="transaction-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm transition-opacity duration-300">
         <form action="" method="post" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+
+            <input type="hidden" name="card_id" id="transaction_card_id" value="">
+
             <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <h3 class="text-xl font-bold text-gray-800">New Transaction</h3>
                 <button type="button" onclick="document.getElementById('transaction-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 transition-colors">
@@ -391,9 +424,7 @@ if (isset($_POST['save_card'])) {
 
     <div id="add-card-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm transition-opacity duration-300">
         <form action="" method="post" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-
             <input type="hidden" name="create_card" value="2">
-
             <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <h3 class="text-xl font-bold text-gray-800">Add New Card</h3>
                 <button type="button" onclick="document.getElementById('add-card-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 transition-colors">
@@ -402,7 +433,6 @@ if (isset($_POST['save_card'])) {
                     </svg>
                 </button>
             </div>
-
             <div class="px-8 py-6 space-y-5">
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Card Number</label>
@@ -416,13 +446,11 @@ if (isset($_POST['save_card'])) {
                             class="w-full rounded-xl border-gray-200 bg-gray-50 pl-11 pr-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium tracking-widest">
                     </div>
                 </div>
-
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Card Holder</label>
                     <input required type="text" name="card_name" placeholder="YOUR NAME"
                         class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium uppercase">
                 </div>
-
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Expires</label>
@@ -443,7 +471,6 @@ if (isset($_POST['save_card'])) {
                     </div>
                 </div>
             </div>
-
             <div class="px-8 py-5 bg-gray-50 border-t border-gray-100 flex gap-3">
                 <button type="button" onclick="document.getElementById('add-card-modal').classList.add('hidden')" class="w-1/3 rounded-xl border border-gray-300 bg-white py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
                     Cancel
@@ -456,19 +483,27 @@ if (isset($_POST['save_card'])) {
     </div>
 
     <script>
-        // Auto-space for Card Number in Modal
+        // 1. OPEN TRANSACTION MODAL & SET CARD ID
+        function openTransactionModal(cardId) {
+            // Set the hidden input value
+            document.getElementById('transaction_card_id').value = cardId;
+            // Show the modal
+            document.getElementById('transaction-modal').classList.remove('hidden');
+            // Optional: Log to console to verify
+            console.log("Opening transaction form for Card ID: " + cardId);
+        }
+
+        // 2. FORM FORMATTING
         const cardInput = document.getElementById('modal_card_number');
         if (cardInput) {
             cardInput.addEventListener('input', function(e) {
                 e.target.value = e.target.value.replace(/[^\d]/g, '').replace(/(.{4})/g, '$1 ').trim();
             });
         }
-
-        // Auto-slash for Date in Modal
         const dateInput = document.getElementById('modal_ex_date');
         if (dateInput) {
             dateInput.addEventListener('input', function(e) {
-                var input = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                var input = e.target.value.replace(/\D/g, '');
                 if (input.length > 2) {
                     e.target.value = input.substring(0, 2) + '/' + input.substring(2, 4);
                 } else {
