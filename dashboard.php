@@ -69,8 +69,34 @@ if (isset($_POST['save_card'])) {
                                                                 '$card_date',
                                                                 '$card_cvc',
                                                                 $user_id)");
+}
 
-    // DISPLAY THE CARD
+// SEND MONEY
+if (isset($_POST['perform_send_money'])) {
+    $recipient_email = $_POST['recipient_email'];
+    $amount_sent = $_POST['send_amount'];
+    $note_sent = $_POST['send_note'] ?? "";
+
+    $get_receiver_id = mysqli_query($connect, "SELECT id FROM users WHERE email = '$recipient_email'");
+    if(mysqli_num_rows($get_receiver_id) == 0){
+        echo "no one";
+        exit();
+    }else{
+        $receiver_id = mysqli_fetch_assoc($get_receiver_id);
+
+        $get_mainCard_id = mysqli_query($connect, "SELECT * FROM cards WHERE card_index = 1 AND user_id = {$receiver_id['id']}");
+        $mainCard_id = mysqli_fetch_assoc($get_mainCard_id);
+
+        $date = date('Y-m-d');
+        
+        $sender = mysqli_query($connect, "SELECT * FROM cards WHERE card_index = 1 and user_id = {$_SESSION['user-id']}");
+        $sender_card = mysqli_fetch_assoc($sender);
+
+        mysqli_query($connect, "INSERT INTO transactions(user_id , card_id , description, amount , date , type) VALUES({$receiver_id['id']} , {$mainCard_id['id']} , '$note_sent' , $amount_sent , '$date' , 'income')");
+
+        mysqli_query($connect, "INSERT INTO transactions(user_id , card_id , description, amount , date , type) VALUES({$_SESSION['user-id']} , {$sender_card['id']} , '$note_sent' , $amount_sent , '$date' , 'expense')");
+    }
+
 }
 ?>
 <!DOCTYPE html>
@@ -112,7 +138,7 @@ if (isset($_POST['save_card'])) {
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <span class="text-sm font-medium text-gray-500">Welcome,
+                    <span class="text-sm font-medium text-gray-500 hidden sm:block">Welcome,
                         <span class="text-gray-900 font-bold">
                             <?php
                             $sqll = "SELECT * FROM users WHERE id = {$_SESSION['user-id']}";
@@ -121,6 +147,13 @@ if (isset($_POST['save_card'])) {
                             echo $roww['name'] ?>
                         </span>
                     </span>
+
+                    <button onclick="document.getElementById('send-money-modal').classList.remove('hidden')" class="bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 transform hover:-translate-y-0.5 cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                        </svg>
+                        <span class="hidden sm:inline">Send Money</span>
+                    </button>
                     <a href="logout.php" class="bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
                         <span>Logout</span>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
@@ -191,8 +224,8 @@ if (isset($_POST['save_card'])) {
                     $income_query = mysqli_query($connect, "SELECT sum(amount) AS sum FROM transactions WHERE card_id = $current_card_id  AND type = 'income'");
                     $income_data = mysqli_fetch_assoc($income_query);
                     $income_total = $income_data['sum'] ?? 0;
-                    
-                    
+
+
                     $expense_query = mysqli_query($connect, "SELECT sum(amount) AS sum FROM transactions WHERE card_id = $current_card_id  AND type = 'expense'");
                     $expense_data = mysqli_fetch_assoc($expense_query);
                     $expense_total = $expense_data['sum'] ?? 0;
@@ -477,6 +510,62 @@ if (isset($_POST['save_card'])) {
                 </button>
                 <button type="submit" name="save_card" class="w-2/3 rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 hover:shadow-indigo-500/30 transition-all transform active:scale-[0.98]">
                     Save Card
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div id="send-money-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm transition-opacity duration-300">
+        <form action="" method="post" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+
+            <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 class="text-xl font-bold text-gray-800">Send Money</h3>
+                <button type="button" onclick="document.getElementById('send-money-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="px-8 py-6 space-y-5">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Recipient Email</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <input required type="email" name="recipient_email" placeholder="friend@example.com"
+                            class="w-full rounded-xl border-gray-200 bg-gray-50 pl-11 pr-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Amount to Send</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</span>
+                        <input required type="number" step="0.01" name="send_amount" placeholder="0.00"
+                            class="w-full rounded-xl border-gray-200 bg-gray-50 pl-8 pr-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-bold text-lg">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Note (Optional)</label>
+                    <input type="text" name="send_note" placeholder="Dinner, Rent, Gift..."
+                        class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium">
+                </div>
+            </div>
+
+            <div class="px-8 py-5 bg-gray-50 border-t border-gray-100 flex gap-3">
+                <button type="button" onclick="document.getElementById('send-money-modal').classList.add('hidden')" class="w-1/3 rounded-xl border border-gray-300 bg-white py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" name="perform_send_money" class="w-2/3 rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 hover:shadow-indigo-500/30 transition-all transform active:scale-[0.98] flex justify-center items-center gap-2">
+                    <span>Send Now</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                    </svg>
                 </button>
             </div>
         </form>

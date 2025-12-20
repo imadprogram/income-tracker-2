@@ -90,4 +90,4 @@ ALTER TABLE transactions ADD COLUMN type ENUM('income' , 'expense') NOT NULL
 
 SELECT * FROM transactions 
 
-DELETE FROM transactions
+DELETE FROM cards WHERE card_index = 2
