@@ -30,23 +30,60 @@ $expense_balance = mysqli_query($connect, "SELECT sum(amount) AS sum FROM transa
 $expense_sum = mysqli_fetch_assoc($expense_balance);
 /////////////
 
-// submit transaction
-$card_id;
+// UPDATE THE CATEGORY LIMIT
+if (isset($_POST['save_budget'])) {
+    $budget_category = $_POST['budget_category'];
+    $budget_amount = $_POST['budget_amount'];
+    $user_id = $_SESSION['user-id'];
+
+    $check_limit = mysqli_query($connect, "SELECT amount FROM budgets WHERE user_id = $user_id AND title = '$budget_category'");
+
+    if (mysqli_num_rows($check_limit) > 0) {
+        mysqli_query($connect, "UPDATE budgets SET amount = $budget_amount WHERE title = '$budget_category' AND  user_id = $user_id");
+        echo "<script>alert('the limit is updated !')</script>";
+    } else {
+        mysqli_query($connect, "INSERT INTO budgets(user_id , title , amount) VALUES($user_id , '$budget_category' , $budget_amount)");
+        echo "<script>alert('the limit is set !')</script>";
+    }
+}
+
+// SUBMIT TRANSACTION
 if (isset($_POST['save_transaction'])) {
     $transaction_category = $_POST['category'];
     $transaction_amount = $_POST['amount'];
     $transaction_date = !empty($_POST['date']) ? $_POST['date'] : date('Y-m-d');
     $user_id = $_SESSION['user-id'];
-    //
-    $sql_id = "SELECT id FROM cards WHERE user_id = $user_id";
-    $results = mysqli_query($connect, $sql_id);
-
-    $card_row = mysqli_fetch_assoc($results);
-    // $card_id = $card_row['id'];
     $card_id = $_POST['card_id'];
-    //
     $type = $_POST['type'];
+
+    $allow_insert = true;
+
+    if ($type == 'expense') {
+        $budget_check = mysqli_query($connect, "SELECT amount FROM budgets WHERE user_id = $user_id AND title = '$transaction_category'");
+
+        if (mysqli_num_rows($budget_check) > 0) {
+            $budget_row = mysqli_fetch_assoc($budget_check);
+            $limit_amount = $budget_row['amount'];
+
+            $current_month = date('m', strtotime($transaction_date));
+            $current_year = date('Y', strtotime($transaction_date));
+
+            $sum_result = mysqli_query($connect, "SELECT sum(amount) as total FROM transactions WHERE user_id = $user_id AND card_id = $card_id AND type = 'expense' AND description = '$transaction_category' AND MONTH(date) = '$current_month' AND YEAR(date) = '$current_year'");
+
+            $sum_row = mysqli_fetch_assoc($sum_result);
+            $current_spent = $sum_row['total'] ?? 0;
+
+            if(($current_spent + $transaction_amount) > $limit_amount){
+                $allow_insert = false;
+                echo "<script>alert('you can't insert , the amount is bigger than the rest you have!')</script>";
+            }
+        }
+    }
+
+    if($allow_insert){
     mysqli_query($connect, "INSERT INTO transactions(user_id , card_id , description , amount , date, type) VALUES($user_id ,$card_id ,'$transaction_category' , $transaction_amount , '$transaction_date', '$type')");
+    }
+    ////////
 }
 
 // ADD ANOTHER CARD
@@ -75,28 +112,27 @@ if (isset($_POST['save_card'])) {
 if (isset($_POST['perform_send_money'])) {
     $recipient_email = $_POST['recipient_email'];
     $amount_sent = $_POST['send_amount'];
-    $note_sent = $_POST['send_note'] ?? "";
+    // $note_sent = $_POST['send_note'] ?? "";
 
     $get_receiver_id = mysqli_query($connect, "SELECT id FROM users WHERE email = '$recipient_email'");
-    if(mysqli_num_rows($get_receiver_id) == 0){
+    if (mysqli_num_rows($get_receiver_id) == 0) {
         echo "no one";
         exit();
-    }else{
+    } else {
         $receiver_id = mysqli_fetch_assoc($get_receiver_id);
 
         $get_mainCard_id = mysqli_query($connect, "SELECT * FROM cards WHERE card_index = 1 AND user_id = {$receiver_id['id']}");
         $mainCard_id = mysqli_fetch_assoc($get_mainCard_id);
 
         $date = date('Y-m-d');
-        
+
         $sender = mysqli_query($connect, "SELECT * FROM cards WHERE card_index = 1 and user_id = {$_SESSION['user-id']}");
         $sender_card = mysqli_fetch_assoc($sender);
 
-        mysqli_query($connect, "INSERT INTO transactions(user_id , card_id , description, amount , date , type) VALUES({$receiver_id['id']} , {$mainCard_id['id']} , '$note_sent' , $amount_sent , '$date' , 'income')");
+        mysqli_query($connect, "INSERT INTO transactions(user_id , card_id , description, amount , date , type) VALUES({$receiver_id['id']} , {$mainCard_id['id']} , 'Recieved' , $amount_sent , '$date' , 'income')");
 
-        mysqli_query($connect, "INSERT INTO transactions(user_id , card_id , description, amount , date , type) VALUES({$_SESSION['user-id']} , {$sender_card['id']} , '$note_sent' , $amount_sent , '$date' , 'expense')");
+        mysqli_query($connect, "INSERT INTO transactions(user_id , card_id , description, amount , date , type) VALUES({$_SESSION['user-id']} , {$sender_card['id']} , 'Sent' , $amount_sent , '$date' , 'expense')");
     }
-
 }
 ?>
 <!DOCTYPE html>
@@ -147,6 +183,14 @@ if (isset($_POST['perform_send_money'])) {
                             echo $roww['name'] ?>
                         </span>
                     </span>
+
+                    <button onclick="document.getElementById('budget-modal').classList.remove('hidden')" class="bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+                        </svg>
+                        <span class="hidden sm:inline">Set Limit</span>
+                    </button>
 
                     <button onclick="document.getElementById('send-money-modal').classList.remove('hidden')" class="bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 transform hover:-translate-y-0.5 cursor-pointer">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
@@ -318,7 +362,6 @@ if (isset($_POST['perform_send_money'])) {
                     <thead>
                         <tr class="bg-gray-50/50">
                             <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">Transaction</th>
-                            <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">card name</th>
                             <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">Category</th>
                             <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">Date</th>
                             <th class="py-4 px-6 text-xs font-semibold uppercase text-gray-500 tracking-wider">Status</th>
@@ -334,16 +377,15 @@ if (isset($_POST['perform_send_money'])) {
                                 echo "
                         <tr class='hover:bg-gray-50 transition-colors'>
                             <td class='py-4 px-6 flex items-center gap-3'>
-                                <div class='w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center'>
-                                    <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-5 h-5'>
-                                        <path stroke-linecap='round' stroke-linejoin='round' d='M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z' />
+                                <div class='w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center'>
+                                    <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-6 h-6'>
+                                        <path stroke-linecap='round' stroke-linejoin='round' d='M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33' />
                                     </svg>
                                 </div>
                                 <div>
                                     <p class='text-sm font-semibold text-gray-900'>" . $row['description'] . "</p>
                                 </div>
                             </td>
-                            <td class='py-4 px-6 text-sm text-gray-600'>" . $row['card_id'] . "</td>
                             <td class='py-4 px-6 text-sm text-gray-600'>" . $row['type'] . "</td>
                             <td class='py-4 px-6 text-sm text-gray-600'>" . $row['date'] . "</td>
                             <td class='py-4 px-6'>
@@ -372,6 +414,51 @@ if (isset($_POST['perform_send_money'])) {
 
     </main>
 
+    <div id="budget-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm transition-opacity duration-300">
+        <form action="" method="post" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 class="text-xl font-bold text-gray-800">Set Category Limit</h3>
+                <button type="button" onclick="document.getElementById('budget-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="px-8 py-6 space-y-5">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Category</label>
+                    <div class="relative">
+                        <select required name="budget_category" class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 outline-none font-medium appearance-none cursor-pointer">
+                            <option value="" disabled selected>Select category</option>
+                            <option value="Food">Food & Dining</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Bills">Bills & Utilities</option>
+                            <option value="Health">Health</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Monthly Limit Amount</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</span>
+                        <input required type="number" step="0.01" name="budget_amount" placeholder="e.g. 1500.00" class="w-full rounded-xl border-gray-200 bg-gray-50 pl-8 pr-4 py-3 text-gray-800 focus:bg-white focus:border-indigo-500 outline-none font-bold text-lg">
+                    </div>
+                </div>
+            </div>
+            <div class="px-8 py-5 bg-gray-50 border-t border-gray-100 flex gap-3">
+                <button type="button" onclick="document.getElementById('budget-modal').classList.add('hidden')" class="w-1/3 rounded-xl border border-gray-300 bg-white py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+                <button type="submit" name="save_budget" class="w-2/3 rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-all">Set Limit</button>
+            </div>
+        </form>
+    </div>
 
     <div id="transaction-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm transition-opacity duration-300">
         <form action="" method="post" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
@@ -388,7 +475,7 @@ if (isset($_POST['perform_send_money'])) {
             </div>
             <div class="px-8 py-6 space-y-5">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Category</label>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Type</label>
                     <div class="grid grid-cols-2 gap-3">
                         <label class="cursor-pointer">
                             <input type="radio" name="type" value="income" class="peer sr-only" checked>
@@ -550,11 +637,6 @@ if (isset($_POST['perform_send_money'])) {
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Note (Optional)</label>
-                    <input type="text" name="send_note" placeholder="Dinner, Rent, Gift..."
-                        class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium">
-                </div>
             </div>
 
             <div class="px-8 py-5 bg-gray-50 border-t border-gray-100 flex gap-3">

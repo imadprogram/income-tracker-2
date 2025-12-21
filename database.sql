@@ -90,4 +90,15 @@ ALTER TABLE transactions ADD COLUMN type ENUM('income' , 'expense') NOT NULL
 
 SELECT * FROM transactions 
 
-DELETE FROM cards WHERE card_index = 2
+DELETE FROM budgets
+
+
+CREATE TABLE budgets(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(250) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+)
+
+SELECT * FROM budgets
