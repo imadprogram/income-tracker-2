@@ -102,3 +102,16 @@ CREATE TABLE budgets(
 )
 
 SELECT * FROM budgets
+
+CREATE TABLE recurring_transactions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT(11) NOT NULL,
+    card_id INT(11) NOT NULL,
+    description VARCHAR(50) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    type VARCHAR(10) NOT NULL, 
+    day_of_month INT NOT NULL,
+    last_run_date DATE DEFAULT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
+);

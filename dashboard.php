@@ -73,15 +73,15 @@ if (isset($_POST['save_transaction'])) {
             $sum_row = mysqli_fetch_assoc($sum_result);
             $current_spent = $sum_row['total'] ?? 0;
 
-            if(($current_spent + $transaction_amount) > $limit_amount){
+            if (($current_spent + $transaction_amount) > $limit_amount) {
                 $allow_insert = false;
                 echo "<script>alert('you can't insert , the amount is bigger than the rest you have!')</script>";
             }
         }
     }
 
-    if($allow_insert){
-    mysqli_query($connect, "INSERT INTO transactions(user_id , card_id , description , amount , date, type) VALUES($user_id ,$card_id ,'$transaction_category' , $transaction_amount , '$transaction_date', '$type')");
+    if ($allow_insert) {
+        mysqli_query($connect, "INSERT INTO transactions(user_id , card_id , description , amount , date, type) VALUES($user_id ,$card_id ,'$transaction_category' , $transaction_amount , '$transaction_date', '$type')");
     }
     ////////
 }
@@ -132,6 +132,45 @@ if (isset($_POST['perform_send_money'])) {
         mysqli_query($connect, "INSERT INTO transactions(user_id , card_id , description, amount , date , type) VALUES({$receiver_id['id']} , {$mainCard_id['id']} , 'Recieved' , $amount_sent , '$date' , 'income')");
 
         mysqli_query($connect, "INSERT INTO transactions(user_id , card_id , description, amount , date , type) VALUES({$_SESSION['user-id']} , {$sender_card['id']} , 'Sent' , $amount_sent , '$date' , 'expense')");
+    }
+}
+
+/// save recurrent
+if (isset($_POST['save_recurring'])) {
+    $rec_card_id = $_POST['rec_card_id'];
+    $rec_type = $_POST['rec_type'];
+    $rec_category = $_POST['rec_category'];
+    $rec_day = $_POST['rec_day'];
+    $rec_amount = $_POST['rec_amount'];
+    $user_id = $_SESSION['user-id'];
+
+    $query = "INSERT INTO recurring_transactions (user_id, card_id, description, amount, type, day_of_month, last_run_date) VALUES ($user_id, $rec_card_id, '$rec_category', $rec_amount, '$rec_type', $rec_day, NULL)";
+
+    You have the Form (to enter the data) and the Cron Job (to process the data in the background).
+
+However, your dashboard.php is missing the PHP Logic to SAVE the recurring rule when you click that button. If you click "Enable Automation" right now, nothing will happen.
+
+Step 1: Add the Save Logic
+Go to the very top of your dashboard.php file (inside the PHP section) and add this block. You can place it right after the save_budget block.
+
+PHP
+
+// SAVE RECURRING TRANSACTION
+if (isset($_POST['save_recurring'])) {
+    $rec_card_id = $_POST['rec_card_id'];
+    $rec_type = $_POST['rec_type'];
+    $rec_category = $_POST['rec_category'];
+    $rec_day = $_POST['rec_day'];
+    $rec_amount = $_POST['rec_amount'];
+    $user_id = $_SESSION['user-id'];
+
+    // Insert into DB with last_run_date as NULL (It hasn't run yet)
+    $query = "INSERT INTO recurring_transactions (user_id, card_id, description, amount, type, day_of_month, last_run_date) VALUES ($user_id, $rec_card_id, '$rec_category', $rec_amount, '$rec_type', $rec_day, NULL)";
+    
+    if(mysqli_query($connect, $query)){
+        echo "<script>alert('Auto-payment scheduled successfully!');</script>";
+    } else {
+        echo "<script>alert('Error: " . mysqli_error($connect) . "');</script>";
     }
 }
 ?>
@@ -192,12 +231,20 @@ if (isset($_POST['perform_send_money'])) {
                         <span class="hidden sm:inline">Set Limit</span>
                     </button>
 
+                    <button onclick="document.getElementById('recurring-modal').classList.remove('hidden')" class="bg-white text-purple-600 border border-purple-200 hover:bg-purple-50 px-3 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                        </svg>
+                        <span class="hidden sm:inline">Recurring</span>
+                    </button>
+
                     <button onclick="document.getElementById('send-money-modal').classList.remove('hidden')" class="bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 transform hover:-translate-y-0.5 cursor-pointer">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                         </svg>
                         <span class="hidden sm:inline">Send Money</span>
                     </button>
+
                     <a href="logout.php" class="bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
                         <span>Logout</span>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
@@ -456,6 +503,91 @@ if (isset($_POST['perform_send_money'])) {
             <div class="px-8 py-5 bg-gray-50 border-t border-gray-100 flex gap-3">
                 <button type="button" onclick="document.getElementById('budget-modal').classList.add('hidden')" class="w-1/3 rounded-xl border border-gray-300 bg-white py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
                 <button type="submit" name="save_budget" class="w-2/3 rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-all">Set Limit</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="recurring-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm transition-opacity duration-300">
+        <form action="" method="post" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 class="text-xl font-bold text-gray-800">Recurring Transaction</h3>
+                <button type="button" onclick="document.getElementById('recurring-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="px-8 py-6 space-y-5">
+                <p class="text-xs text-gray-500 font-medium">This transaction will be automatically added every month on the day you select.</p>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Select Card</label>
+                    <div class="relative">
+                        <select required name="rec_card_id" class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 focus:bg-white focus:border-indigo-500 outline-none font-medium appearance-none cursor-pointer">
+                            <?php
+                            $cards_q = mysqli_query($connect, "SELECT * FROM cards WHERE user_id = {$_SESSION['user-id']}");
+                            if (mysqli_num_rows($cards_q) > 0) {
+                                while ($c_row = mysqli_fetch_assoc($cards_q)) {
+                                    echo "<option value='{$c_row['id']}'>{$c_row['card_holder']} (.. " . substr($c_row['card_number'], -4) . ")</option>";
+                                }
+                            } else {
+                                echo "<option disabled>No cards found</option>";
+                            }
+                            ?>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="rec_type" value="income" class="peer sr-only" checked>
+                        <div class="rounded-xl border border-gray-200 py-3 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 transition-all">Income</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="rec_type" value="expense" class="peer sr-only">
+                        <div class="rounded-xl border border-gray-200 py-3 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50 peer-checked:border-rose-500 peer-checked:bg-rose-50 peer-checked:text-rose-700 transition-all">Expense</div>
+                    </label>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Category</label>
+                    <div class="relative">
+                        <select required name="rec_category" class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 focus:bg-white focus:border-indigo-500 outline-none font-medium appearance-none cursor-pointer">
+                            <option value="Salary">Salary</option>
+                            <option value="Rent">Rent</option>
+                            <option value="Internet">Internet</option>
+                            <option value="Bills">Bills & Utilities</option>
+                            <option value="Food">Food & Dining</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Day (1-31)</label>
+                        <input required type="number" min="1" max="31" name="rec_day" placeholder="e.g. 25" class="w-full rounded-xl border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 focus:bg-white focus:border-indigo-500 outline-none font-bold text-center">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Amount</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</span>
+                            <input required type="number" step="0.01" name="rec_amount" placeholder="0.00" class="w-full rounded-xl border-gray-200 bg-gray-50 pl-8 pr-4 py-3 text-gray-800 focus:bg-white focus:border-indigo-500 outline-none font-bold">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-8 py-5 bg-gray-50 border-t border-gray-100 flex gap-3">
+                <button type="button" onclick="document.getElementById('recurring-modal').classList.add('hidden')" class="w-1/3 rounded-xl border border-gray-300 bg-white py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+                <button type="submit" name="save_recurring" class="w-2/3 rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-all">Enable Automation</button>
             </div>
         </form>
     </div>
