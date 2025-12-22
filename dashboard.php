@@ -146,14 +146,7 @@ if (isset($_POST['save_recurring'])) {
 
     $query = "INSERT INTO recurring_transactions (user_id, card_id, description, amount, type, day_of_month, last_run_date) VALUES ($user_id, $rec_card_id, '$rec_category', $rec_amount, '$rec_type', $rec_day, NULL)";
 
-    You have the Form (to enter the data) and the Cron Job (to process the data in the background).
 
-However, your dashboard.php is missing the PHP Logic to SAVE the recurring rule when you click that button. If you click "Enable Automation" right now, nothing will happen.
-
-Step 1: Add the Save Logic
-Go to the very top of your dashboard.php file (inside the PHP section) and add this block. You can place it right after the save_budget block.
-
-PHP
 
 // SAVE RECURRING TRANSACTION
 if (isset($_POST['save_recurring'])) {
