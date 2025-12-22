@@ -1,10 +1,7 @@
 <?php
 include("connect.php");
-?>
-<?php
+
 session_start();
-
-
 
 if (!isset($_SESSION['user-id'])) {
     header('Location: index.php');
@@ -146,7 +143,7 @@ if (isset($_POST['save_recurring'])) {
 
     $query = "INSERT INTO recurring_transactions (user_id, card_id, description, amount, type, day_of_month, last_run_date) VALUES ($user_id, $rec_card_id, '$rec_category', $rec_amount, '$rec_type', $rec_day, NULL)";
 
-
+}
 
 // SAVE RECURRING TRANSACTION
 if (isset($_POST['save_recurring'])) {
